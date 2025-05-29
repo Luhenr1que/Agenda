@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import Entrar from './src/login/entrar/index.js';
 import Cadastro from './src/login/cadastro/index.js';
 import Home from './src/home/index.js';
-import Inicio from './src/login/entrar/index.js';
+import Inicio from './src/login/inicio/index.js';
 
 const Stack = createNativeStackNavigator();
 
