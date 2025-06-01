@@ -16,7 +16,7 @@ export default function Entrar (){
 return(
       <ImageBackground style={styles.container} sresizeMode='cover' source={require('../../../assets/img/back.png')}>
             <Image style={styles.logo} source={require('../../../assets/img/bmg.png')} />
-            <Pressable onPress={() => go('Entrar')} style={styles.botao}>
+            <Pressable onPress={() => go('Home')} style={styles.botao}>
                   <Text style={styles.botaoT}>
                         Entrar
                   </Text>
