@@ -1,7 +1,7 @@
 import styles from './style.js';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState} from 'react';
-import { ImageBackground, Pressable, Text, View, Image, Modal,TextInput,FlatList} from 'react-native';
+import { ImageBackground, Pressable, Text, View, Image, Modal,TextInput,FlatList,KeyboardAvoidingView,Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Home (){
@@ -37,7 +37,9 @@ export default function Home (){
 
           let total = 0;
           lista.forEach(item => {
-            const valor = parseFloat(item.valor.replace('.', '').replace(',', '.')) || 0;
+            console.log(item.valor)
+            const valor = parseFloat(item.valor)
+            console.log(valor)
             total += item.mOn === "ganhou" ? valor : -valor;
           });
 
@@ -361,7 +363,6 @@ const abrirModalEdicao = (item, index) => {
                         const originalIndex = dados.length - 1 - index;
                         return (
                           <View style={styles.cardBox}> 
-
                             <Pressable onPress={()=>abrirModalEdicao(item,originalIndex)} style={styles.card}>
                               {/* Descrição no topo */}
                               <Text style={styles.cardTextDesc}>{item.desc}</Text>
@@ -398,6 +399,7 @@ const abrirModalEdicao = (item, index) => {
                     <Pressable style={styles.plusB} onPress={()=> newCard('-')}>
                           <Image style={styles.plus} source={require('../../assets/img/no.png')}></Image>
                     </Pressable>    
+
                   <Modal animationType='fade' transparent={true} visible={m}>
                     <Pressable onPress={()=>setM(false)}><Image style={{ width: 40, height: 30, tintColor: '#fff',botton:'50%', }} source={require('../../assets/img/volta.png')}/></Pressable>
                     <View style={styles.modalA}>
@@ -479,6 +481,7 @@ const abrirModalEdicao = (item, index) => {
                     </View>
                   </Modal>
             </View>
+
 
       )
 }

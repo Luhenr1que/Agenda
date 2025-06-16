@@ -54,7 +54,7 @@ export default StyleSheet.create({
   },
     cardBox:{
     width: '90%',
-    height:'100%',
+    height: 100,
     maxHeight:'100%',
     marginHorizontal:'5%',
     marginVertical:10,
@@ -114,7 +114,7 @@ export default StyleSheet.create({
   },
   modalBox: {
     width: '80%',
-    height: '60%',
+    height: 400,
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 30,
