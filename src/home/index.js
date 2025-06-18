@@ -13,12 +13,16 @@ export default function Home (){
       const [indexEditar, setIndexEditar] = useState(null);
       const [mAviso,setMAviso]=useState(false)
       const [Aviso,setAviso]=useState('')
-      const [tipo,setTipo]=useState(0)
       const [msg,setMsg]=useState(0)
       const [dados, setDados] = useState([]);
       const [saldo, setSaldo] = useState(0);
-      const nome = "Olá, João!";
+      const [saldoCor, setSaldoCor] = useState('');
+      const [usuario, setUsuario] = useState({ 
+        nome: "Usuário", 
+        dataNasc: "00/00/0000" 
+      });
       const [saldoVisivel, setSaldoVisivel] = useState(true);
+      const [showPerfil, setShowPerfil] = useState(false);
 
 
       useEffect(() => {
@@ -27,6 +31,28 @@ export default function Home (){
         carregarDados();
         
       }, [m === false]);
+
+      useEffect(() => {
+        const carregarUsuario = async () => {
+          try {
+            const userSalvo = await AsyncStorage.getItem('usuarios');
+            const usuarios = userSalvo ? JSON.parse(userSalvo) : [];
+            
+            if (usuarios.length > 0) {
+              setUsuario(usuarios[0]); // Pega o primeiro usuário da lista
+            } else {
+              // Define um usuário padrão se não houver nenhum cadastrado
+              setUsuario({ nome: "Usuário", dataNasc: "00/00/0000" });
+            }
+          } catch (error) {
+            console.log("Erro ao buscar usuário:", error);
+            // Garante um fallback mesmo em caso de erro
+            setUsuario({ nome: "Usuário", dataNasc: "00/00/0000" });
+          }
+        };
+
+        carregarUsuario();
+      }, []);
 
       const carregarDados = async () => {
         try {
@@ -40,7 +66,7 @@ export default function Home (){
             console.log(item.valor)
             const valor = parseFloat(item.valor)
             console.log(valor)
-            total += item.mOn === "ganhou" ? valor : -valor;
+            total += item.mOn === "Recebido" ? valor : -valor;
           });
 
           setSaldo(total);
@@ -53,9 +79,9 @@ export default function Home (){
       const newCard = (tipos) =>{
             let mOn;
             if(tipos=='+'){
-              setMsg('ganhou')
+              setMsg('Recebido')
             }else{
-              setMsg('perdeu')
+              setMsg('Enviado')
             }
             setM(true)
       }
@@ -203,17 +229,22 @@ export default function Home (){
         editarCampo("valor", finalValor);
       };
 
-      const formatarDescEditar = (texto) => {
-        if (!texto) return '';
-        const textArrumado = texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
-        editarCampo("desc", textArrumado);
-      };
+    const formatarDescEditar = (texto) => {
+      editarCampo("desc", texto); // Agora aceita o texto como digitado
+    };
 
 
     const cadastrar = async () =>{
 
       if (indexEditar !== null) {
         salvarEdicao();  
+        setFormData({
+          desc: '',
+          valor: '',
+          data: '',
+          hora: '',
+          mOn: ''
+        });
         return;
       }
 
@@ -254,6 +285,7 @@ export default function Home (){
                   await AsyncStorage.setItem('dados', JSON.stringify(lista))
       
                   console.log('Sucesso ao salvar dados');
+                  console.log(lista)
                   setM(false)
                   carregarDados();
 
@@ -274,6 +306,16 @@ export default function Home (){
 
     }
 
+    const apagarDados = async () => {
+      try {
+        await AsyncStorage.removeItem('dados');
+        carregarDados();
+        console.log('Lista dados apagada com sucesso.');
+      } catch (error) {
+        console.log('Erro ao apagar a lista DATOS:', error);
+      }
+    };
+
 const abrirModalEdicao = (item, index) => {
   setFormData(item);
   setMsg(item.mOn); 
@@ -282,26 +324,32 @@ const abrirModalEdicao = (item, index) => {
 };
 
     const salvarEdicao = async () => {
-      if (!formData.desc || !formData.valor || !formData.data || !formData.hora) {
-        setAviso("Preencha todos os campos para editar.");
-        setMAviso(true);
-        return;
-      }
+  if (!formData.desc || !formData.valor || !formData.data || !formData.hora) {
+    setAviso("Preencha todos os campos para editar.");
+    setMAviso(true);
+    return;
+  }
 
-      const dadosAtualizados = [...dados];
-      dadosAtualizados[indexEditar] = formData;
+  // Formata a descrição antes de salvar
+  const dadosFormatados = {
+    ...formData,
+    desc: formData.desc.charAt(0).toUpperCase() + formData.desc.slice(1).toLowerCase()
+  };
 
-      try {
-        await AsyncStorage.setItem("dados", JSON.stringify(dadosAtualizados));
-        setDados(dadosAtualizados);
-        setMEditar(false);
-        setFormData({ desc: "", valor: "", data: "", hora: "", mOn: "" });
-        setIndexEditar(null);
-        carregarDados();
-      } catch (error) {
-        console.log("Erro ao salvar edição:", error);
-      }
-    };
+  const dadosAtualizados = [...dados];
+  dadosAtualizados[indexEditar] = dadosFormatados;
+
+  try {
+    await AsyncStorage.setItem("dados", JSON.stringify(dadosAtualizados));
+    setDados(dadosAtualizados);
+    setMEditar(false);
+    setFormData({ desc: "", valor: "", data: "", hora: "", mOn: "" });
+    setIndexEditar(null);
+    carregarDados();
+  } catch (error) {
+    console.log("Erro ao salvar edição:", error);
+  }
+};
     const deletarItem = async (indexParaDeletar) => {
       try {
         const dadosSalvos = await AsyncStorage.getItem('dados');
@@ -313,6 +361,7 @@ const abrirModalEdicao = (item, index) => {
         setDados(lista);
         carregarDados();
         setMEditar(false);
+        setFormData({ desc: "", valor: "", data: "", hora: "", mOn: "" });
         setIndexEditar(null);
       } catch (error) {
         console.log('Erro ao deletar item:', error);
@@ -324,31 +373,45 @@ const abrirModalEdicao = (item, index) => {
             <View style={styles.container}>
                   <View style={styles.navbar}>
                     <View style={styles.navbarIni}>
-                      <Text style={{ fontSize: 30, fontWeight: 'bold', color: '#fff' }}>{nome}</Text>
-                      <View style={{ display:'flex',flexDirection:'row', gap:20,}}>
-                      <Pressable onPress={() => setSaldoVisivel(!saldoVisivel)}>
-                        <Image
-                          source={
-                            saldoVisivel
-                              ? require('../../assets/img/ver.png')
-                              : require('../../assets/img/naoVer.png')
-                          }
-                          style={{ width: 40, height: 30, tintColor: '#fff',top:5, }}
-                        />
-                      </Pressable>
-                      <Pressable onPress={() => setMDelete()}>
-                        <Image
-                          source={require('../../assets/img/lixeira.png')}
-                          style={{ width: 30, height: 40, tintColor: '#fff', }}
-                        />
-                      </Pressable>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between',gap:'50%', }}>
+                        
+                        {/* Ícone perfil no canto esquerdo */}
+                        <Pressable onPress={() => setShowPerfil(true)}>
+                          <Image
+                            source={require('../../assets/img/perfil.png')}
+                            style={{ width: 60, height: 60, tintColor: '#fff' }}
+                          />
+                        </Pressable>
+
+                        {/* Container dos dois ícones no canto direito */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Pressable onPress={() => setSaldoVisivel(!saldoVisivel)}>
+                            <Image
+                              source={
+                                saldoVisivel
+                                  ? require('../../assets/img/ver.png')
+                                  : require('../../assets/img/naoVer.png')
+                              }
+                              style={{ width: 40, height: 31, marginRight: 10, tintColor: '#fff' }}
+                            />
+                          </Pressable>
+
+                          <Pressable onPress={() => setMDelete(true)}>
+                            <Image
+                              source={require('../../assets/img/lixeira.png')}
+                              style={{ width: 30, height: 40, tintColor: '#fff' }}
+                            />
+                          </Pressable>
+                        </View>
+
                       </View>
                     </View>
                         <View style={styles.navbarBox}>
+                              <Text style={{ fontSize: 25,marginBottom:10,marginLeft:10, fontWeight: 'bold', color: '#fff' }}>Olá, {usuario.nome}</Text>
                               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                               <View>
                                 
-                                <Text style={{ fontSize: 25, fontWeight: 'bold', color: saldo >= 0 ? '#23ff00' : '#ff0000' }}>
+                                <Text style={{ fontSize: 30, fontWeight: 'bold', color: '#fff'}}>
                                   {saldoVisivel ? ` R$ ${saldo.toFixed(2).replace('.', ',')}` : 'Saldo: --------'}
                                 </Text>
                               </View>
@@ -372,12 +435,12 @@ const abrirModalEdicao = (item, index) => {
                                 <Text
                                   style={[
                                     styles.cardTextValor,
-                                    item.mOn === "ganhou"
+                                    item.mOn === "Recebido"
                                       ? { color: "#23ff00" }
                                       : { color: "#ff0000" },
                                   ]}
                                 >
-                                  {item.mOn === "ganhou" ? `+${item.valor}` : `-${item.valor}`}
+                                  {item.mOn === "ganhou" ? `R$ ${item.valor}` : `R$ ${item.valor}`}
                                 </Text>
                                 <View style={{ flex: 1 }} />
                                 <Text style={styles.cardText}>
@@ -401,10 +464,11 @@ const abrirModalEdicao = (item, index) => {
                     </Pressable>    
 
                   <Modal animationType='fade' transparent={true} visible={m}>
-                    <Pressable onPress={()=>setM(false)}><Image style={{ width: 40, height: 30, tintColor: '#fff',botton:'50%', }} source={require('../../assets/img/volta.png')}/></Pressable>
+                   <Pressable onPress={()=>{setM(false), setFormData({desc: "",valor: "",data: "",hora: "",mOn: ""});}}>
                     <View style={styles.modalA}>
-                      <View style={styles.modalBox}>
-                        <Text style={{ fontSize: 30, fontWeight: 'bold', color: msg === 'ganhou' ? '#4CAF50' : '#E53935', textAlign: 'center', marginBottom: 20, textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3, textTransform: 'capitalize' }}>{msg}</Text>
+                       
+                        <View style={styles.modalBox}>
+                        <Text style={{ fontSize: 30, fontWeight: 'bold', color: msg === 'Recebido' ? '#00d14d' : '#d10000', textAlign: 'center',fontSize:35, marginBottom: 20, textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3, textTransform: 'capitalize' }}>{msg}</Text>
                         <View style={styles.TArea}>
                           <View style={styles.linha}>
                             <TextInput placeholder="Descrição" style={styles.input} placeholderTextColor="rgba(0, 0, 0, 0.3)" maxLength={20}  onChangeText={formatarDesc}/>
@@ -416,14 +480,15 @@ const abrirModalEdicao = (item, index) => {
                             <TextInput placeholder="Data" style={styles.inputA} placeholderTextColor="rgba(0, 0, 0, 0.3)" minLength={10} maxLength={10} keyboardType="numeric" onChangeText={formatarData} value={formData.data}/>
                             <TextInput placeholder="Hora" style={styles.inputA} placeholderTextColor="rgba(0, 0, 0, 0.3)" minLength={5} maxLength={5} keyboardType="numeric" onChangeText={formatarHora} value={formData.hora}/>
                           </View>
-                          <Pressable style={{ backgroundColor: '#4CAF50', paddingHorizontal: 30,paddingVertical:15, borderRadius: 10, textAlign:'center', marginRight: 10}} onPress={()=>cadastrar()}><Text style={{ color: '#fff',  fontSize:20, }}>Salvar</Text></Pressable>
+                          <Pressable style={{ backgroundColor: '#00d14d', paddingHorizontal: 30,paddingVertical:15, borderRadius: 10,borderWidth:2, textAlign:'center', marginRight: 10}} onPress={()=>cadastrar()}><Text style={{ color: '#fff',  fontSize:20, }}>Salvar</Text></Pressable>
                         </View>
                       </View>
                     </View>
+                    </Pressable>
                   </Modal>
 
                   <Modal animationType='fade' transparent={true} visible={mAviso}>
-                        <Pressable onPress={()=>setMAviso(false)} style={styles.modalA}>
+                        <Pressable onPress={()=>{setMAviso(false),setFormData({desc: "",valor: "",data: "",hora: "",mOn: ""});}} style={styles.modalA}>
                               <View style={styles.modalA}>
                                     <View style={styles.modalBox}>
                                           <Text style={styles.titulo}>{Aviso}</Text>
@@ -432,30 +497,36 @@ const abrirModalEdicao = (item, index) => {
                         </Pressable>
                   </Modal>
 
+
+                  <Modal animationType='fade' transparent={true} visible={showPerfil}>
+                        <Pressable style={styles.modalA} onPress={()=>{setShowPerfil(false),setFormData({desc: "",valor: "",data: "",hora: "",mOn: ""});}} >
+                                    <View style={styles.modalBoxP}>
+                                          <Text style={styles.titulo}>{usuario.nome}</Text>
+                                          <Text style={styles.titulo}>{usuario.dataNasc}</Text>
+                                    </View>
+                        </Pressable>
+                  </Modal>
+
                   <Modal animationType='fade' transparent={true} visible={mDelete}>
-                        <Pressable onPress={()=>setMDelete(false)} style={styles.modalA}>
-                              <View style={styles.modalA}>
-                                <Pressable onPress={()=>setMEditar(false)}><Image style={{ width: 40, height: 30, tintColor: '#fff',top:'30%', }} source={require('../../assets/img/volta.png')}/></Pressable>
+                        <Pressable style={styles.modalA} onPress={()=>{setMDelete(false),setFormData({desc: "",valor: "",data: "",hora: "",mOn: ""});}}>
                                     <View style={styles.modalBoxDelete}>
-                                          <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#000', textAlign: 'center', marginVertical: 20 }}>Deseja deletar todas as informações?</Text>
+                                          <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginVertical: 20 }}>Deseja deletar todas as informações?</Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-                                            <Pressable onPress={()=>setMDelete(false)} style={{ backgroundColor: '#4CAF50', paddingVertical: 10, paddingHorizontal: 30, borderRadius: 10, alignItems: 'center', flex: 1, marginRight: 10}}>
-                                              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize:20, }}>Não</Text>
-                                            </Pressable>
-                                            <Pressable onPress={() => {setMDelete(false); AsyncStorage.clear(); carregarDados()} } style={{ backgroundColor: '#F44336', paddingVertical: 10, paddingHorizontal: 30, borderRadius: 10, alignItems: 'center', flex: 1, marginLeft: 10 }}>
+                                            <Pressable onPress={() => {setMDelete(false);apagarDados()}} style={{ backgroundColor: '#d10000', paddingHorizontal: 30,paddingVertical:15, borderRadius: 10,borderWidth:2, textAlign:'center', marginRight: 10 }}>
                                               <Text style={{ color: '#fff', fontWeight: 'bold', fontSize:20, }}>Sim</Text>
+                                            </Pressable>
+                                            <Pressable onPress={()=>{setMDelete(false)}} style={{ backgroundColor: '#00d14d', paddingHorizontal: 30,paddingVertical:15, borderRadius: 10,borderWidth:2, textAlign:'center', marginRight: 10}}>
+                                              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize:20, }}>Não</Text>
                                             </Pressable>
                                           </View>
                                     </View>
-                              </View>
                         </Pressable>
                   </Modal>
 
                   <Modal animationType='fade' transparent={true} visible={mEditar}>
-                    <View style={styles.modalA}>
-                      <Pressable onPress={()=>setMEditar(false)}><Image style={{ width: 40, height: 30, tintColor: '#fff', }} source={require('../../assets/img/volta.png')}/></Pressable>
+                      <Pressable style={styles.modalA} onPress={()=>{setMEditar(false),setFormData({desc: "",valor: "",data: "",hora: "",mOn: ""});}}>
                       <View style={styles.modalBox}>
-                        <Text style={{ fontSize: 30, fontWeight: 'bold', color: msg === 'ganhou' ? '#4CAF50' : '#E53935', textAlign: 'center', marginBottom: 20, textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3, textTransform: 'capitalize' }}>{msg}</Text>
+                        <Text style={{ fontSize: 30, fontWeight: 'bold', color: msg === 'Recebido' ? '#00d14d' : '#d10000',fontSize:35 ,textAlign: 'center', marginBottom: 20, textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3, textTransform: 'capitalize' }}>{msg}</Text>
                         <View style={styles.TArea}>
                           <View style={styles.linha}>
                             <TextInput placeholder="Descrição" style={styles.input} placeholderTextColor="rgba(0, 0, 0, 0.3)" maxLength={20}  onChangeText={formatarDescEditar} value={formData.desc}/>
@@ -467,18 +538,18 @@ const abrirModalEdicao = (item, index) => {
                             <TextInput placeholder="Data" style={styles.inputA} placeholderTextColor="rgba(0, 0, 0, 0.3)" minLength={10} maxLength={10} keyboardType="numeric" onChangeText={formatarDataEditar} value={formData.data}/>
                             <TextInput placeholder="Hora" style={styles.inputA} placeholderTextColor="rgba(0, 0, 0, 0.3)" minLength={5} maxLength={5} keyboardType="numeric" onChangeText={formatarHoraEditar} value={formData.hora}/>
                           </View>
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-                            <Pressable onPress={salvarEdicao} style={{ backgroundColor: '#4CAF50', paddingVertical: 10, paddingHorizontal: 30, borderRadius: 10, alignItems: 'center', flex: 1, marginRight: 10}}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 0 }}>
+                            <Pressable onPress={salvarEdicao} style={{ backgroundColor: '#00d14d',paddingHorizontal: 30,paddingVertical:15, borderRadius: 10,borderWidth:2, textAlign:'center', marginRight: 10}}>
                               <Text style={{ color: '#fff', fontWeight: 'bold', fontSize:20, }}>Salvar</Text>
                             </Pressable>
-                            <Pressable onPress={() => deletarItem(indexEditar)} style={{ backgroundColor: '#F44336', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center', flex: 1, marginLeft: 10 }}>
+                            <Pressable onPress={() => deletarItem(indexEditar)} style={{ backgroundColor: '#d10000', paddingHorizontal: 30,paddingVertical:15, borderRadius: 10,borderWidth:2, textAlign:'center', marginRight: 10 }}>
                               <Text style={{ color: '#fff', fontWeight: 'bold', fontSize:20, }}>Deletar</Text>
                             </Pressable>
                           </View>
 
                         </View>
                       </View>
-                    </View>
+                      </Pressable>
                   </Modal>
             </View>
 

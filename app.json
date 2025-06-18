@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "agenda",
+    "name": "Agenda Next",
     "slug": "agenda",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/img/icone.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/img/icone.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,14 +17,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/img/icone.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.luhenriq.agenda"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/img/icone.png"
     },
     "extra": {
       "eas": {
